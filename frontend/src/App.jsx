@@ -14,7 +14,6 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   const [manualRoomInput, setManualRoomInput] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
 
   const playAlertSound = () => {
     try {
@@ -43,7 +42,7 @@ function App() {
         osc2.stop(audioCtx.currentTime + 0.3);
       }, 80);
     } catch (e) {
-      console.log("Audio block bypass active.");
+      console.log("Audio notify blocked.");
     }
   };
 
@@ -125,6 +124,7 @@ function App() {
         display: flex;
         flex-direction: column;
         background-color: #dfd9cc;
+        overflow: hidden;
       }
 
       .btn-black {
@@ -182,30 +182,25 @@ function App() {
   const uploadFilesBatch = async (files) => {
     if (!files || files.length === 0) return;
     setUploadStatus(`PACKING ${files.length} ASSETS...`);
-    
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const formData = new FormData();
       formData.append('file', file);
       formData.append('roomId', roomId);
-
       try {
         await axios.post(`${BACKEND_URL}/upload`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percentCompleted);
-            setUploadStatus(`BEAMING FILE [${i + 1}/${files.length}]: ${percentCompleted}%`);
+            setUploadStatus(`BEAMING [${i + 1}/${files.length}]: ${percentCompleted}%`);
           }
         });
       } catch (err) {
-        console.error(err);
-        setUploadStatus('❌ STREAM TRANSMISSION TIMED OUT.');
+        setUploadStatus('❌ TRANSMISSION TIMED OUT.');
         return;
       }
     }
-    setUploadStatus('✅ ALL FILES TRANSMITTED SUCCESSFULLY!');
-    setUploadProgress(0);
+    setUploadStatus('✅ ALL FILES TRANSMITTED!');
   };
 
   const triggerDirectPrint = (fileData, fileName) => {
@@ -232,26 +227,22 @@ function App() {
   const shopUrl = `${window.location.origin}?room=${roomId}`;
 
   return (
-    <div 
-      onDragOver={(e) => e.preventDefault()} 
-      onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files) uploadFilesBatch(e.dataTransfer.files); }}
-      style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ebe6dd' }}
-    >
+    <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ebe6dd' }}>
       
       {/* 1. TOP NAVBAR */}
       <header style={{ width: '100%', borderBottom: '1px solid #000000', padding: '25px 40px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontFamily: 'Oswald', fontSize: '2.5rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '-0.03em', color: '#000000' }}>
           PrintQ<span style={{ color: '#2b5ce6' }}>⚡</span>
         </span>
-        <span style={{ fontFamily: 'Oswald', fontSize: '1.1rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: '#706b64', fontWeight: '700' }}>
+        <span style={{ fontFamily: 'Oswald', fontSize: '1.1rem', textTransform: 'uppercase', color: '#706b64', fontWeight: '700' }}>
           DEVELOPER HUB
         </span>
       </header>
 
-      {/* 2. CORE SYSTEM GRID LAYOUT */}
+      {/* 2. SYSTEM LAYOUT GRID */}
       <div className="grid-container">
         
-        {/* LEFT BLOCK */}
+        {/* LEFT AREA */}
         <div className="grid-left">
           <div>
             <h1 className="brutal-header">TO YOUR</h1>
@@ -278,10 +269,10 @@ function App() {
           </div>
         </div>
 
-        {/* RIGHT BLOCK */}
+        {/* RIGHT AREA */}
         <div className="grid-right">
           
-          {/* QR GATEWAY BOX */}
+          {/* QR BOX ZONE */}
           <div style={{ flex: '1', padding: '40px', borderBottom: '1px solid #000000', display: 'flex', boxSizing: 'border-box', minHeight: '300px', width: '100%' }}>
             {isCustomer ? (
               <div style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -319,22 +310,22 @@ function App() {
             </div>
           </div>
 
-          {/* FILE QUEUE */}
+          {/* FILE QUEUE TRACK - WRAP TEXT TO NEW LINE FIX */}
           <div className="custom-scroll" style={{ flex: '1', padding: '30px', overflowY: 'auto', maxHeight: '280px', boxSizing: 'border-box' }}>
             {receivedFiles.length === 0 ? (
-              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#706b64', fontFamily: 'Oswald', fontSize: '1.2rem', letterSpacing: '0.05em' }}>
+              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#706b64', fontFamily: 'Oswald', fontSize: '1.2rem' }}>
                 AWAITING DATA TRANSMISSION FLOW...
               </div>
             ) : (
               receivedFiles.map((file, index) => (
-                <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', boxShadow: '4px 4px 0px #000000', boxSizing: 'border-box' }}>
-                  <div style={{ overflow: 'hidden', marginRight: '15px' }}>
-                    <p style={{ margin: '0 0 4px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{file.fileName}</p>
+                <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '12px', boxShadow: '4px 4px 0px #000000', boxSizing: 'border-box' }}>
+                  <div style={{ width: '100%', wordBreak: 'break-all' }}>
+                    <p style={{ margin: '0 0 4px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', lineHeight: '1.3' }}>{file.fileName}</p>
                     <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '700', color: '#2b5ce6', textTransform: 'uppercase' }}>{file.fileType ? file.fileType.split('/')[1] : 'ASSET'}</p>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                    <button onClick={() => triggerDirectPrint(file.fileData, file.fileName)} style={{ background: '#000000', color: '#ffffff', border: 'none', padding: '8px 16px', fontFamily: 'Oswald', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>PRINT</button>
-                    <button onClick={() => triggerManualDownload(file.fileData, file.fileName)} style={{ background: 'transparent', color: '#000000', border: '1px solid #000000', padding: '8px 16px', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>⬇</button>
+                  <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'flex-end' }}>
+                    <button onClick={() => triggerDirectPrint(file.fileData, file.fileName)} style={{ background: '#000000', color: '#ffffff', border: 'none', padding: '10px 20px', fontFamily: 'Oswald', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>PRINT</button>
+                    <button onClick={() => triggerManualDownload(file.fileData, file.fileName)} style={{ background: 'transparent', color: '#000000', border: '1px solid #000000', padding: '10px 20px', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>⬇ DOWNLOAD</button>
                   </div>
                 </div>
               ))
@@ -348,14 +339,13 @@ function App() {
       <div style={{ padding: '30px 40px', boxSizing: 'border-box', width: '100%' }}>
         {!isCustomer && (
           <div style={{ marginBottom: '25px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#706b64', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>RESTORE SESSION REJOIN</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#706b64', display: 'block', marginBottom: '8px' }}>RESTORE SESSION REJOIN</span>
             <form onSubmit={(e) => { e.preventDefault(); if (manualRoomInput.trim().length === 6) window.location.href = `${window.location.origin}?room=${manualRoomInput.trim()}`; }} style={{ display: 'flex', maxWidth: '380px' }}>
               <input type="text" placeholder="Enter 6-digit session id" maxLength={6} value={manualRoomInput} onChange={(e) => setManualRoomInput(e.target.value)} style={{ flex: '1', padding: '12px', border: '1px solid #000000', background: 'transparent', fontSize: '1rem', color: '#000000' }} />
               <button type="submit" style={{ background: '#000000', color: '#ffffff', border: 'none', padding: '0 20px', fontFamily: 'Oswald', cursor: 'pointer' }}>REJOIN</button>
             </form>
           </div>
         )}
-
         <div style={{ borderTop: '1px solid #000000', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', fontWeight: '600' }}>
           <span style={{ color: '#000000' }}>© 2026 Devendra Developer</span>
           <a href="https://www.linkedin.com/in/devendra-prajapati-508693347" target="_blank" rel="noopener noreferrer" style={{ color: '#000000', textDecoration: 'none' }}>LinkedIn</a>
