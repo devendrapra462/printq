@@ -14,6 +14,7 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   const [manualRoomInput, setManualRoomInput] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const playAlertSound = () => {
     try {
@@ -77,6 +78,7 @@ function App() {
         color: #000000;
         font-family: 'Plus Jakarta Sans', sans-serif; 
         overflow-x: hidden;
+        width: 100%;
       }
 
       .brutal-header {
@@ -122,7 +124,7 @@ function App() {
         flex: 0.9;
         display: flex;
         flex-direction: column;
-        background-color: #dfd9cc; /* Darker tone for right section */
+        background-color: #dfd9cc;
       }
 
       .btn-black {
@@ -151,6 +153,7 @@ function App() {
         flex-direction: column;
         justify-content: space-between;
         min-height: 100px;
+        box-sizing: border-box;
       }
       .stat-box:last-child { border-right: none; }
       .stat-num { font-family: 'Oswald', sans-serif; font-size: 2.2rem; color: #e6522b; line-height: 1; font-weight: 700; }
@@ -162,7 +165,7 @@ function App() {
       @media (max-width: 768px) {
         .grid-container { flex-direction: column; }
         .grid-left { flex: none; border-right: none; border-bottom: 1px solid #000000; padding: 40px 20px; }
-        .grid-right { flex: none; }
+        .grid-right { flex: none; background-color: #dfd9cc; }
         .brutal-header { font-size: 3.8rem; }
         .outline-drop-text { font-size: 4.5rem; -webkit-text-stroke: 1px #000000; }
         .btn-black { width: 100%; justify-content: center; font-size: 1.1rem; }
@@ -178,7 +181,7 @@ function App() {
 
   const uploadFilesBatch = async (files) => {
     if (!files || files.length === 0) return;
-    setUploadStatus(`PACKING ${files.length} ASSETS INTO DATA STREAM...`);
+    setUploadStatus(`PACKING ${files.length} ASSETS...`);
     
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -232,10 +235,10 @@ function App() {
     <div 
       onDragOver={(e) => e.preventDefault()} 
       onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files) uploadFilesBatch(e.dataTransfer.files); }}
-      style={{ width: '100vw', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ebe6dd' }}
+      style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ebe6dd' }}
     >
       
-      {/* 1. TOP NAVBAR - CORNER TO CORNER */}
+      {/* 1. TOP NAVBAR */}
       <header style={{ width: '100%', borderBottom: '1px solid #000000', padding: '25px 40px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontFamily: 'Oswald', fontSize: '2.5rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '-0.03em', color: '#000000' }}>
           PrintQ<span style={{ color: '#2b5ce6' }}>⚡</span>
@@ -294,7 +297,7 @@ function App() {
                   </p>
                 </div>
                 <div style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '5px 5px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {roomId && <QRCodeSVG value={shopUrl} size={140} level="M" />}
+                  {roomId && <QRCodeSVG value={shopUrl} size={135} level="M" />}
                 </div>
               </div>
             )}
