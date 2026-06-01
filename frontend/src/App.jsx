@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 
-const BACKEND_URL = window.location.hostname === 'localhost' ? "http://localhost:5000" : window.location.origin;
+const BACKEND_URL = "https://printq-7a8m.onrender.com";
 const socket = io(BACKEND_URL);
 
 function App() {
