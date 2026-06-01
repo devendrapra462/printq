@@ -124,7 +124,6 @@ function App() {
         display: flex;
         flex-direction: column;
         background-color: #dfd9cc;
-        overflow: hidden;
       }
 
       .btn-black {
@@ -272,8 +271,8 @@ function App() {
         {/* RIGHT AREA */}
         <div className="grid-right">
           
-          {/* QR BOX ZONE */}
-          <div style={{ flex: '1', padding: '40px', borderBottom: '1px solid #000000', display: 'flex', boxSizing: 'border-box', minHeight: '300px', width: '100%' }}>
+          {/* QR BOX ZONE - FIXED FOR CUTTING ISSUE */}
+          <div style={{ flex: '1', padding: '40px 30px 40px 40px', borderBottom: '1px solid #000000', display: 'flex', boxSizing: 'border-box', minHeight: '300px', width: '100%' }}>
             {isCustomer ? (
               <div style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <h2 className="outline-drop-text">READY</h2>
@@ -287,7 +286,7 @@ function App() {
                     Point your smartphone camera at this code to securely couple devices. Drag files anywhere to test.
                   </p>
                 </div>
-                <div style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '5px 5px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '5px 5px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '15px' }}>
                   {roomId && <QRCodeSVG value={shopUrl} size={135} level="M" />}
                 </div>
               </div>
@@ -310,7 +309,7 @@ function App() {
             </div>
           </div>
 
-          {/* FILE QUEUE TRACK - WRAP TEXT TO NEW LINE FIX */}
+          {/* FILE QUEUE TRACK */}
           <div className="custom-scroll" style={{ flex: '1', padding: '30px', overflowY: 'auto', maxHeight: '280px', boxSizing: 'border-box' }}>
             {receivedFiles.length === 0 ? (
               <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#706b64', fontFamily: 'Oswald', fontSize: '1.2rem' }}>
