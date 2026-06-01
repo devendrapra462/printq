@@ -14,9 +14,7 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   const [manualRoomInput, setManualRoomInput] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
 
-  // Alert tone for file reception
   const playAlertSound = () => {
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -44,7 +42,7 @@ function App() {
         osc2.stop(audioCtx.currentTime + 0.3);
       }, 80);
     } catch (e) {
-      console.log("Audio notify blocked.");
+      console.log("Audio block bypass active.");
     }
   };
 
@@ -110,7 +108,6 @@ function App() {
         width: 100%;
         min-height: calc(100vh - 140px);
         border-bottom: 1px solid #000000;
-        background-color: #ebe6dd;
       }
       .grid-left {
         flex: 1.1;
@@ -125,7 +122,7 @@ function App() {
         flex: 0.9;
         display: flex;
         flex-direction: column;
-        background-color: #ebe6dd;
+        background-color: #dfd9cc; /* Darker tone for right section */
       }
 
       .btn-black {
@@ -154,7 +151,6 @@ function App() {
         flex-direction: column;
         justify-content: space-between;
         min-height: 100px;
-        background-color: #ebe6dd;
       }
       .stat-box:last-child { border-right: none; }
       .stat-num { font-family: 'Oswald', sans-serif; font-size: 2.2rem; color: #e6522b; line-height: 1; font-weight: 700; }
@@ -236,15 +232,15 @@ function App() {
     <div 
       onDragOver={(e) => e.preventDefault()} 
       onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files) uploadFilesBatch(e.dataTransfer.files); }}
-      style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ebe6dd' }}
+      style={{ width: '100vw', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ebe6dd' }}
     >
       
-      {/* 1. TOP NAVBAR */}
-      <header style={{ width: '100%', borderBottom: '1px solid #000000', padding: '20px 40px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontFamily: 'Oswald', fontSize: '1.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#000000' }}>
+      {/* 1. TOP NAVBAR - CORNER TO CORNER */}
+      <header style={{ width: '100%', borderBottom: '1px solid #000000', padding: '25px 40px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontFamily: 'Oswald', fontSize: '2.5rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '-0.03em', color: '#000000' }}>
           PrintQ<span style={{ color: '#2b5ce6' }}>⚡</span>
         </span>
-        <span style={{ fontFamily: 'Oswald', fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: '#706b64' }}>
+        <span style={{ fontFamily: 'Oswald', fontSize: '1.1rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: '#706b64', fontWeight: '700' }}>
           DEVELOPER HUB
         </span>
       </header>
@@ -282,7 +278,7 @@ function App() {
         {/* RIGHT BLOCK */}
         <div className="grid-right">
           
-          {/* QR GATEWAY BOX - FIXED GRID ALIGNMENT */}
+          {/* QR GATEWAY BOX */}
           <div style={{ flex: '1', padding: '40px', borderBottom: '1px solid #000000', display: 'flex', boxSizing: 'border-box', minHeight: '300px', width: '100%' }}>
             {isCustomer ? (
               <div style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -297,8 +293,8 @@ function App() {
                     Point your smartphone camera at this code to securely couple devices. Drag files anywhere to test.
                   </p>
                 </div>
-                <div style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '4px 4px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {roomId && <QRCodeSVG value={shopUrl} size={135} level="M" />}
+                <div style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '5px 5px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {roomId && <QRCodeSVG value={shopUrl} size={140} level="M" />}
                 </div>
               </div>
             )}
@@ -320,7 +316,7 @@ function App() {
             </div>
           </div>
 
-          {/* FILE QUEUE - PRINT & DOWNLOAD FIX */}
+          {/* FILE QUEUE */}
           <div className="custom-scroll" style={{ flex: '1', padding: '30px', overflowY: 'auto', maxHeight: '280px', boxSizing: 'border-box' }}>
             {receivedFiles.length === 0 ? (
               <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#706b64', fontFamily: 'Oswald', fontSize: '1.2rem', letterSpacing: '0.05em' }}>
@@ -328,7 +324,7 @@ function App() {
               </div>
             ) : (
               receivedFiles.map((file, index) => (
-                <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', boxShadow: '3px 3px 0px #000000', boxSizing: 'border-box' }}>
+                <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', boxShadow: '4px 4px 0px #000000', boxSizing: 'border-box' }}>
                   <div style={{ overflow: 'hidden', marginRight: '15px' }}>
                     <p style={{ margin: '0 0 4px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{file.fileName}</p>
                     <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '700', color: '#2b5ce6', textTransform: 'uppercase' }}>{file.fileType ? file.fileType.split('/')[1] : 'ASSET'}</p>
@@ -346,7 +342,7 @@ function App() {
       </div>
 
       {/* FOOTER */}
-      <div style={{ padding: '30px 40px', boxSizing: 'border-box' }}>
+      <div style={{ padding: '30px 40px', boxSizing: 'border-box', width: '100%' }}>
         {!isCustomer && (
           <div style={{ marginBottom: '25px' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#706b64', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>RESTORE SESSION REJOIN</span>
