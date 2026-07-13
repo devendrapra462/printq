@@ -126,6 +126,14 @@ function App() {
         background-color: #dfd9cc;
       }
 
+      .qr-wrapper {
+        display: flex; 
+        width: 100%; 
+        justify-content: space-between; 
+        align-items: center; 
+        gap: 20px;
+      }
+
       .btn-black {
         background-color: #000000;
         color: #ffffff;
@@ -161,6 +169,7 @@ function App() {
       .custom-scroll::-webkit-scrollbar { width: 4px; }
       .custom-scroll::-webkit-scrollbar-thumb { background: #000000; }
 
+      /* ABSOLUTE RESPONSIVE BREAKDOWN FOR MOBILE DEVICE RUN */
       @media (max-width: 768px) {
         .grid-container { flex-direction: column; }
         .grid-left { flex: none; border-right: none; border-bottom: 1px solid #000000; padding: 40px 20px; }
@@ -169,6 +178,18 @@ function App() {
         .outline-drop-text { font-size: 4.5rem; -webkit-text-stroke: 1px #000000; }
         .btn-black { width: 100%; justify-content: center; font-size: 1.1rem; }
         .stat-num { font-size: 1.6rem; }
+        
+        /* Fixed horizontal cut on mobile - changes flex to vertical column stacking */
+        .qr-wrapper {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 30px;
+        }
+        
+        .qr-container-box {
+          align-self: center; /* Centers QR perfectly inside screen box width */
+          margin-right: 0 !important;
+        }
       }
     `;
     document.head.appendChild(styleSheet);
@@ -271,22 +292,22 @@ function App() {
         {/* RIGHT AREA */}
         <div className="grid-right">
           
-          {/* QR BOX ZONE - FIXED FOR CUTTING ISSUE */}
-          <div style={{ flex: '1', padding: '40px 30px 40px 40px', borderBottom: '1px solid #000000', display: 'flex', boxSizing: 'border-box', minHeight: '300px', width: '100%' }}>
+          {/* QR BOX ZONE */}
+          <div style={{ flex: '1', padding: '40px', borderBottom: '1px solid #000000', display: 'flex', boxSizing: 'border-box', minHeight: '300px', width: '100%' }}>
             {isCustomer ? (
               <div style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <h2 className="outline-drop-text">READY</h2>
                 <p style={{ fontFamily: 'Oswald', fontSize: '1.2rem', color: '#706b64', marginTop: '10px' }}>TERMINAL PIPE CONNECTED</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+              <div className="qr-wrapper">
                 <div style={{ flex: '1' }}>
                   <h2 className="outline-drop-text">DROP</h2>
                   <p style={{ fontSize: '0.95rem', color: '#57534e', marginTop: '15px', lineHeight: '1.4', fontWeight: '500' }}>
                     Point your smartphone camera at this code to securely couple devices. Drag files anywhere to test.
                   </p>
                 </div>
-                <div style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '5px 5px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '15px' }}>
+                <div className="qr-container-box" style={{ background: '#ffffff', padding: '16px', border: '1px solid #000000', boxShadow: '5px 5px 0px #000000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '15px' }}>
                   {roomId && <QRCodeSVG value={shopUrl} size={135} level="M" />}
                 </div>
               </div>
