@@ -11,9 +11,9 @@ function App() {
   const [roomId, setRoomId] = useState('');
   const [isCustomer, setIsCustomer] = useState(false);
   const [receivedFiles, setReceivedFiles] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   const [manualRoomInput, setManualRoomInput] = useState('');
+  const [sessionCleared, setSessionCleared] = useState(false);
 
   const playAlertSound = () => {
     try {
@@ -63,8 +63,17 @@ function App() {
 
     socket.on('receive_file', (data) => {
       setReceivedFiles((prev) => [data, ...prev]);
+      setSessionCleared(false);
       playAlertSound(); 
     });
+
+    // Notify server to clean up on tab close
+    const handleBeforeUnload = () => {
+      if (roomId && !isCustomer) {
+        socket.emit('leave_room', roomId);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `
@@ -169,7 +178,22 @@ function App() {
       .custom-scroll::-webkit-scrollbar { width: 4px; }
       .custom-scroll::-webkit-scrollbar-thumb { background: #000000; }
 
-      /* ABSOLUTE RESPONSIVE BREAKDOWN FOR MOBILE DEVICE RUN */
+      .privacy-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #15803d;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 6px 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 15px;
+        border: 1px solid #000000;
+        box-shadow: 2px 2px 0px #000000;
+      }
+
       @media (max-width: 768px) {
         .grid-container { flex-direction: column; }
         .grid-left { flex: none; border-right: none; border-bottom: 1px solid #000000; padding: 40px 20px; }
@@ -178,26 +202,25 @@ function App() {
         .outline-drop-text { font-size: 4.5rem; -webkit-text-stroke: 1px #000000; }
         .btn-black { width: 100%; justify-content: center; font-size: 1.1rem; }
         .stat-num { font-size: 1.6rem; }
-        
-        /* Fixed horizontal cut on mobile - changes flex to vertical column stacking */
-        .qr-wrapper {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 30px;
-        }
-        
-        .qr-container-box {
-          align-self: center; /* Centers QR perfectly inside screen box width */
-          margin-right: 0 !important;
-        }
+        .qr-wrapper { flex-direction: column; align-items: flex-start; gap: 30px; }
+        .qr-container-box { align-self: center; margin-right: 0 !important; }
       }
     `;
     document.head.appendChild(styleSheet);
 
     return () => {
       socket.off('receive_file');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [roomId, isCustomer]);
+
+  const handleManualClear = () => {
+    setReceivedFiles([]);
+    setSessionCleared(true);
+    if (roomId) {
+      socket.emit('clear_session', roomId);
+    }
+  };
 
   const uploadFilesBatch = async (files) => {
     if (!files || files.length === 0) return;
@@ -254,9 +277,11 @@ function App() {
         <span style={{ fontFamily: 'Oswald', fontSize: '2.5rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '-0.03em', color: '#000000' }}>
           PrintQ<span style={{ color: '#2b5ce6' }}>⚡</span>
         </span>
-        <span style={{ fontFamily: 'Oswald', fontSize: '1.1rem', textTransform: 'uppercase', color: '#706b64', fontWeight: '700' }}>
-          DEVELOPER HUB
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <span style={{ fontFamily: 'Oswald', fontSize: '1.1rem', textTransform: 'uppercase', color: '#706b64', fontWeight: '700' }}>
+            DEVELOPER HUB
+          </span>
+        </div>
       </header>
 
       {/* 2. SYSTEM LAYOUT GRID */}
@@ -270,21 +295,31 @@ function App() {
             <p style={{ color: '#57534e', fontSize: '1.05rem', marginTop: '24px', maxWidth: '400px', lineHeight: '1.5', fontWeight: '500' }}>
               The fastest way to move photos and PDFs from your phone directly to the merchant shop print queue. Scan, drop, done.
             </p>
+            <div>
+              <span className="privacy-badge">🔒 TRANSIENT PRIVACY ENGINE ACTIVE</span>
+            </div>
           </div>
 
-          <div style={{ marginTop: '40px' }}>
+          <div style={{ marginTop: '40px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {isCustomer ? (
               <>
                 <label className="btn-black" style={{ padding: '20px 40px', cursor: 'pointer' }}>
                   → SELECT FILES TO BEAM
                   <input type="file" multiple onChange={(e) => uploadFilesBatch(e.target.files)} style={{ display: 'none' }} />
                 </label>
-                {uploadStatus && <p style={{ fontFamily: 'Oswald', fontSize: '1.1rem', fontWeight: '700', marginTop: '15px' }}>{uploadStatus}</p>}
+                {uploadStatus && <p style={{ fontFamily: 'Oswald', fontSize: '1.1rem', fontWeight: '700', marginTop: '15px', width: '100%' }}>{uploadStatus}</p>}
               </>
             ) : (
-              <button onClick={() => window.location.reload()} className="btn-black">
-                → START NEW SESSION
-              </button>
+              <>
+                <button onClick={() => window.location.reload()} className="btn-black">
+                  → START NEW SESSION
+                </button>
+                {receivedFiles.length > 0 && (
+                  <button onClick={handleManualClear} style={{ background: '#e6522b', color: '#ffffff', border: 'none', fontFamily: 'Oswald', textTransform: 'uppercase', fontSize: '1.1rem', padding: '16px 24px', cursor: 'pointer', fontWeight: '700' }}>
+                    🗑️ WIPE DATA
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -333,8 +368,8 @@ function App() {
           {/* FILE QUEUE TRACK */}
           <div className="custom-scroll" style={{ flex: '1', padding: '30px', overflowY: 'auto', maxHeight: '280px', boxSizing: 'border-box' }}>
             {receivedFiles.length === 0 ? (
-              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#706b64', fontFamily: 'Oswald', fontSize: '1.2rem' }}>
-                AWAITING DATA TRANSMISSION FLOW...
+              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#706b64', fontFamily: 'Oswald', fontSize: '1.2rem', textAlign: 'center' }}>
+                {sessionCleared ? "⚠️ SESSION MEMORY WIPED OUT SAFELY." : "AWAITING DATA TRANSMISSION FLOW..."}
               </div>
             ) : (
               receivedFiles.map((file, index) => (
