@@ -8,8 +8,19 @@ const BACKEND_URL = "https://printq-7a8m.onrender.com";
 const socket = io(BACKEND_URL);
 
 function App() {
-  const [roomId, setRoomId] = useState('');
-  const [isCustomer, setIsCustomer] = useState(false);
+  // FIXED: Room ID is generated ONLY ONCE on initial mount and stays 100% stable
+  const [roomId, setRoomId] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    if (room) return room;
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  });
+
+  const [isCustomer] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return !!urlParams.get('room');
+  });
+
   const [receivedFiles, setReceivedFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState('');
   const [manualRoomInput, setManualRoomInput] = useState('');
@@ -49,17 +60,8 @@ function App() {
   useEffect(() => {
     document.title = "PrintQ⚡ – Secure File Transfer | Devendra Developer";
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
-
-    if (room) {
-      setRoomId(room);
-      setIsCustomer(true);
-    } else {
-      const newRoomId = Math.floor(100000 + Math.random() * 900000).toString();
-      setRoomId(newRoomId);
-      socket.emit('join_room', newRoomId);
-    }
+    // Join socket room strictly once using the stable roomId
+    socket.emit('join_room', roomId);
 
     socket.on('receive_file', (data) => {
       setReceivedFiles((prev) => [data, ...prev]);
@@ -67,7 +69,6 @@ function App() {
       playAlertSound(); 
     });
 
-    // Notify server to clean up on tab close
     const handleBeforeUnload = () => {
       if (roomId && !isCustomer) {
         socket.emit('leave_room', roomId);
