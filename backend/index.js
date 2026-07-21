@@ -1,65 +1,26 @@
-// backend/index.js
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
+app.post("/upload", (req, res) => {
+  try {
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-const app = express();
-app.use(cors({ origin: "*" }));
-app.use(fileUpload());
-app.use(express.json());
+    const { file } = req.files;
+    const { roomId } = req.body;
 
-const server = http.createServer(app);
+    const filePayload = {
+      fileName: file.name,
+      fileSize: file.size, // <-- Exact file size in bytes
+      fileType: file.mimetype || file.name.split('.').pop(),
+      fileData: `data:${file.mimetype};base64,${file.data.toString("base64")}`
+    };
 
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
-  maxHttpBufferSize: 1e8 // Set payload capacity up to 100MB safely
-});
+    // Both socket channels emit to ensure frontend compatibility
+    io.to(roomId).emit("receive_file", filePayload);
+    io.to(roomId).emit("file-received", filePayload);
 
-// Root Health Check Route
-app.get('/', (req, res) => {
-  res.send('PrintQ Multi-Node WebSocket Server Engine is running.');
-});
-
-// File Upload Stream Endpoint
-app.post('/upload', (req, res) => {
-  if (!req.files || !req.files.file) {
-    return res.status(400).send('Transmission dropped: Missing payload.');
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("Upload Error:", err);
+    return res.status(500).json({ error: "Server upload failure" });
   }
-
-  const file = req.files.file;
-  const roomId = req.body.roomId;
-
-  // Convert binary data directly to base64 buffer safe for browser consumption
-  const fileDataBase64 = `data:${file.mimetype};base64,${file.data.toString('base64')}`;
-
-  // Emit data packet to specific room instantly
-  io.to(roomId).emit('receive_file', {
-    fileName: file.name,
-    fileType: file.mimetype,
-    fileData: fileDataBase64
-  });
-
-  res.status(200).send({ status: "success", info: "Packet piped successfully." });
-});
-
-// Socket Client Room Control Connection Handlers
-io.on('connection', (socket) => {
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-    console.log(`[Handshake Successful] Client assigned to Node Room: ${roomId}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('[System Signal] Client dropped channel pipeline.');
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 PrintQ Core Server Engine humming on port ${PORT}`);
 });
