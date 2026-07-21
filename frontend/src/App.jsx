@@ -8,8 +8,8 @@ const BACKEND_URL = "https://printq-7a8m.onrender.com";
 const socket = io(BACKEND_URL);
 
 function App() {
-  // FIXED: Room ID is generated ONLY ONCE on initial mount and stays 100% stable
-  const [roomId, setRoomId] = useState(() => {
+  // STRICT STABILITY: Room ID generated strictly once
+  const [roomId] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room');
     if (room) return room;
@@ -25,6 +25,7 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState('');
   const [manualRoomInput, setManualRoomInput] = useState('');
   const [sessionCleared, setSessionCleared] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const playAlertSound = () => {
     try {
@@ -57,10 +58,16 @@ function App() {
     }
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "UNKNOWN SIZE";
+    if (bytes < 1024) return bytes + " B";
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    else return (bytes / 1048576).toFixed(1) + " MB";
+  };
+
   useEffect(() => {
     document.title = "PrintQ⚡ – Secure File Transfer | Devendra Developer";
 
-    // Join socket room strictly once using the stable roomId
     socket.emit('join_room', roomId);
 
     socket.on('receive_file', (data) => {
@@ -128,7 +135,12 @@ function App() {
         flex-direction: column;
         justify-content: space-between;
         background-color: #ebe6dd;
+        transition: background-color 0.2s ease;
       }
+      .grid-left.drag-active {
+        background-color: #d1e0ff;
+      }
+
       .grid-right {
         flex: 0.9;
         display: flex;
@@ -195,6 +207,15 @@ function App() {
         box-shadow: 2px 2px 0px #000000;
       }
 
+      .file-meta-tag {
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border: 1px solid #000000;
+        background-color: #ebe6dd;
+      }
+
       @media (max-width: 768px) {
         .grid-container { flex-direction: column; }
         .grid-left { flex: none; border-right: none; border-bottom: 1px solid #000000; padding: 40px 20px; }
@@ -247,6 +268,23 @@ function App() {
     setUploadStatus('✅ ALL FILES TRANSMITTED!');
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      uploadFilesBatch(e.dataTransfer.files);
+    }
+  };
+
   const triggerDirectPrint = (fileData, fileName) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
@@ -285,35 +323,37 @@ function App() {
         </div>
       </header>
 
-      {/* 2. SYSTEM LAYOUT GRID */}
+      {/* 2. SYSTEM LAYOUT GRID WITH DRAG & DROP & BADGES */}
       <div className="grid-container">
         
         {/* LEFT AREA */}
-        <div className="grid-left">
+        <div 
+          className={`grid-left ${isDragging ? 'drag-active' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <div>
             <h1 className="brutal-header">TO YOUR</h1>
             <h1 className="brutal-header brutal-blue">PRINTER.</h1>
             <p style={{ color: '#57534e', fontSize: '1.05rem', marginTop: '24px', maxWidth: '400px', lineHeight: '1.5', fontWeight: '500' }}>
               The fastest way to move photos and PDFs from your phone directly to the merchant shop print queue. Scan, drop, done.
             </p>
-            <div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <span className="privacy-badge">🔒 TRANSIENT PRIVACY ENGINE ACTIVE</span>
             </div>
           </div>
 
           <div style={{ marginTop: '40px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {isCustomer ? (
+            <label className="btn-black" style={{ padding: '20px 40px', cursor: 'pointer' }}>
+              → SELECT FILES TO BEAM
+              <input type="file" multiple onChange={(e) => uploadFilesBatch(e.target.files)} style={{ display: 'none' }} />
+            </label>
+
+            {!isCustomer && (
               <>
-                <label className="btn-black" style={{ padding: '20px 40px', cursor: 'pointer' }}>
-                  → SELECT FILES TO BEAM
-                  <input type="file" multiple onChange={(e) => uploadFilesBatch(e.target.files)} style={{ display: 'none' }} />
-                </label>
-                {uploadStatus && <p style={{ fontFamily: 'Oswald', fontSize: '1.1rem', fontWeight: '700', marginTop: '15px', width: '100%' }}>{uploadStatus}</p>}
-              </>
-            ) : (
-              <>
-                <button onClick={() => window.location.reload()} className="btn-black">
-                  → START NEW SESSION
+                <button onClick={() => window.location.reload()} className="btn-black" style={{ background: '#ffffff', color: '#000000', border: '1px solid #000000' }}>
+                  NEW SESSION
                 </button>
                 {receivedFiles.length > 0 && (
                   <button onClick={handleManualClear} style={{ background: '#e6522b', color: '#ffffff', border: 'none', fontFamily: 'Oswald', textTransform: 'uppercase', fontSize: '1.1rem', padding: '16px 24px', cursor: 'pointer', fontWeight: '700' }}>
@@ -322,6 +362,8 @@ function App() {
                 )}
               </>
             )}
+
+            {uploadStatus && <p style={{ fontFamily: 'Oswald', fontSize: '1.1rem', fontWeight: '700', marginTop: '15px', width: '100%' }}>{uploadStatus}</p>}
           </div>
         </div>
 
@@ -376,8 +418,11 @@ function App() {
               receivedFiles.map((file, index) => (
                 <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '12px', boxShadow: '4px 4px 0px #000000', boxSizing: 'border-box' }}>
                   <div style={{ width: '100%', wordBreak: 'break-all' }}>
-                    <p style={{ margin: '0 0 4px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', lineHeight: '1.3' }}>{file.fileName}</p>
-                    <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '700', color: '#2b5ce6', textTransform: 'uppercase' }}>{file.fileType ? file.fileType.split('/')[1] : 'ASSET'}</p>
+                    <p style={{ margin: '0 0 6px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', lineHeight: '1.3' }}>{file.fileName}</p>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <span className="file-meta-tag" style={{ color: '#2b5ce6' }}>{file.fileType ? file.fileType.split('/')[1] : 'ASSET'}</span>
+                      {file.fileSize && <span className="file-meta-tag">{formatFileSize(file.fileSize)}</span>}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'flex-end' }}>
                     <button onClick={() => triggerDirectPrint(file.fileData, file.fileName)} style={{ background: '#000000', color: '#ffffff', border: 'none', padding: '10px 20px', fontFamily: 'Oswald', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>PRINT</button>
