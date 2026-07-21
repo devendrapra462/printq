@@ -59,10 +59,10 @@ function App() {
   };
 
   const formatFileSize = (bytes) => {
-    if (!bytes) return "UNKNOWN SIZE";
+    if (!bytes || isNaN(bytes)) return null;
     if (bytes < 1024) return bytes + " B";
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-    else return (bytes / 1048576).toFixed(1) + " MB";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
   };
 
   useEffect(() => {
@@ -70,11 +70,15 @@ function App() {
 
     socket.emit('join_room', roomId);
 
-    socket.on('receive_file', (data) => {
+    // FIXED: Listen to both 'file-received' and 'receive_file' to guarantee backend compatibility
+    const handleIncomingFile = (data) => {
       setReceivedFiles((prev) => [data, ...prev]);
       setSessionCleared(false);
       playAlertSound(); 
-    });
+    };
+
+    socket.on('file-received', handleIncomingFile);
+    socket.on('receive_file', handleIncomingFile);
 
     const handleBeforeUnload = () => {
       if (roomId && !isCustomer) {
@@ -231,7 +235,8 @@ function App() {
     document.head.appendChild(styleSheet);
 
     return () => {
-      socket.off('receive_file');
+      socket.off('file-received', handleIncomingFile);
+      socket.off('receive_file', handleIncomingFile);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [roomId, isCustomer]);
@@ -415,21 +420,33 @@ function App() {
                 {sessionCleared ? "⚠️ SESSION MEMORY WIPED OUT SAFELY." : "AWAITING DATA TRANSMISSION FLOW..."}
               </div>
             ) : (
-              receivedFiles.map((file, index) => (
-                <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '12px', boxShadow: '4px 4px 0px #000000', boxSizing: 'border-box' }}>
-                  <div style={{ width: '100%', wordBreak: 'break-all' }}>
-                    <p style={{ margin: '0 0 6px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', lineHeight: '1.3' }}>{file.fileName}</p>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <span className="file-meta-tag" style={{ color: '#2b5ce6' }}>{file.fileType ? file.fileType.split('/')[1] : 'ASSET'}</span>
-                      {file.fileSize && <span className="file-meta-tag">{formatFileSize(file.fileSize)}</span>}
+              receivedFiles.map((file, index) => {
+                const ext = file.fileName ? file.fileName.split('.').pop().toUpperCase() : 'ASSET';
+                const sizeDisplay = formatFileSize(file.fileSize);
+
+                return (
+                  <div key={index} style={{ border: '1px solid #000000', padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '12px', boxShadow: '4px 4px 0px #000000', boxSizing: 'border-box' }}>
+                    <div style={{ width: '100%', wordBreak: 'break-all' }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: '700', fontSize: '1.1rem', color: '#000000', lineHeight: '1.3' }}>{file.fileName}</p>
+                      
+                      {/* FIXED BADGES DISPLAY ROW */}
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span className="file-meta-tag" style={{ color: '#2b5ce6' }}>{ext}</span>
+                        {sizeDisplay && (
+                          <span className="file-meta-tag" style={{ backgroundColor: '#000000', color: '#ffffff' }}>
+                            {sizeDisplay}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'flex-end' }}>
+                      <button onClick={() => triggerDirectPrint(file.fileData, file.fileName)} style={{ background: '#000000', color: '#ffffff', border: 'none', padding: '10px 20px', fontFamily: 'Oswald', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>PRINT</button>
+                      <button onClick={() => triggerManualDownload(file.fileData, file.fileName)} style={{ background: 'transparent', color: '#000000', border: '1px solid #000000', padding: '10px 20px', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>⬇ DOWNLOAD</button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'flex-end' }}>
-                    <button onClick={() => triggerDirectPrint(file.fileData, file.fileName)} style={{ background: '#000000', color: '#ffffff', border: 'none', padding: '10px 20px', fontFamily: 'Oswald', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>PRINT</button>
-                    <button onClick={() => triggerManualDownload(file.fileData, file.fileName)} style={{ background: 'transparent', color: '#000000', border: '1px solid #000000', padding: '10px 20px', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700' }}>⬇ DOWNLOAD</button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
